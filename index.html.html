@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColorMix - Desafio das Cores</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(135deg,#15152b,#30306b);color:#fff;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:16px}
+.game{width:min(700px,100%);background:#ffffff12;border:1px solid #ffffff25;border-radius:28px;padding:24px;box-shadow:0 20px 60px #0005;backdrop-filter:blur(10px)}
+h1{text-align:center;font-size:34px;margin:0 0 5px}.sub{text-align:center;opacity:.8;margin:0 0 20px}
+.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px}.badge{background:#ffffff18;padding:10px 14px;border-radius:12px;font-weight:bold}
+.target{background:#ffffff0d;border-radius:20px;padding:18px;text-align:center}.targetColor{width:100%;height:90px;border-radius:15px;margin:10px 0;border:2px solid #ffffff35}
+.target small{opacity:.75}.palette{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.color{height:62px;border:3px solid transparent;border-radius:14px;cursor:pointer;font-weight:bold;color:#fff;text-shadow:0 1px 3px #0008;transition:.15s}.color:hover{transform:translateY(-3px)}.color.selected{border-color:#fff;box-shadow:0 0 0 3px #ffffff55}
+.mixbox{height:115px;border-radius:18px;border:2px dashed #ffffff55;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:15px}
+button.action{width:100%;padding:15px;border:0;border-radius:14px;background:#fff;color:#18182c;font-size:18px;font-weight:bold;cursor:pointer}.new{margin-top:10px;background:#ffd84d!important}
+#message{text-align:center;min-height:28px;font-weight:bold;margin:13px 0}
+@media(max-width:480px){.palette{grid-template-columns:repeat(3,1fr)}h1{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="game">
+<h1>🎨 ColorMix</h1>
+<p class="sub">Misture as cores e acerte o desafio!</p>
+<div class="top"><div class="badge">⭐ Pontos: <span id="score">0</span></div><div class="badge">🏆 Fase: <span id="level">1</span></div><div class="badge">❤️ Vidas: <span id="lives">3</span></div></div>
+<div class="target"><small>CRIE UMA COR PARECIDA COM ESTA:</small><div id="target" class="targetColor"></div><b id="targetName">Alvo</b></div>
+<div id="palette" class="palette"></div>
+<div id="mix" class="mixbox">Escolha 2 ou 3 cores</div>
+<div id="message">Escolha as cores que deseja misturar.</div>
+<button class="action" onclick="check()">🎯 MISTURAR E TENTAR</button>
+<button class="action new" onclick="newRound()">🔄 NOVA RODADA</button>
+</div>
+<script>
+const colors=[
+{name:"Vermelho",hex:"#ef3340",rgb:[239,51,64]}, {name:"Azul",hex:"#246bff",rgb:[36,107,255]},
+{name:"Amarelo",hex:"#ffd21f",rgb:[255,210,31]}, {name:"Verde",hex:"#20b85a",rgb:[32,184,90]},
+{name:"Laranja",hex:"#ff7a18",rgb:[255,122,24]}, {name:"Roxo",hex:"#8b45d9",rgb:[139,69,217]},
+{name:"Rosa",hex:"#ff4fa3",rgb:[255,79,163]}, {name:"Ciano",hex:"#19c7d9",rgb:[25,199,217]},
+{name:"Magenta",hex:"#d92cff",rgb:[217,44,255]}, {name:"Turquesa",hex:"#16bfa5",rgb:[22,191,165]},
+{name:"Marrom",hex:"#9a5a32",rgb:[154,90,50]}, {name:"Violeta",hex:"#5d4cff",rgb:[93,76,255]}
+];
+let chosen=[],score=0,level=1,lives=3,target,round=0;
+const $=id=>document.getElementById(id);
+function hex(rgb){return "#"+rgb.map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,"0")).join("")}
+function distance(a,b){return Math.sqrt(a.reduce((s,x,i)=>s+(x-b[i])**2,0))}
+function newRound(){
+ if(lives<=0){lives=3;score=0;level=1}
+ chosen=[]; round++;
+ let pool=[...colors].sort(()=>Math.random()-.5);
+ let mixCount=level<4?2:3, picks=pool.slice(0,mixCount);
+ let rgb=[0,0,0]; picks.forEach(c=>c.rgb.forEach((v,i)=>rgb[i]+=v)); rgb=rgb.map(v=>v/mixCount);
+ target={rgb,name:"Cor alvo"};
+ $("target").style.background=hex(rgb);
+ $("targetName").textContent="Tente chegar perto!";
+ $("mix").style.background="transparent"; $("mix").textContent="Escolha 2 ou 3 cores";
+ $("message").textContent="Escolha "+mixCount+" cores.";
+ renderPalette();
+ update();
+}
+function renderPalette(){
+ let p=[...colors].sort(()=>Math.random()-.5).slice(0,8);
+ $("palette").innerHTML=p.map(c=>`<button class="color" style="background:${c.hex}" onclick="pick('${c.name}',this)">${c.name}</button>`).join("");
+}
+function pick(name,el){
+ if(chosen.length >= (level<4?2:3)) return;
+ chosen.push(colors.find(c=>c.name===name));
+ el.classList.add("selected");
+ $("message").textContent=chosen.length<(level<4?2:3)?"Escolha mais uma cor!":"Pronto! Clique em misturar.";
+ let rgb=[0,0,0];chosen.forEach(c=>c.rgb.forEach((v,i)=>rgb[i]+=v));rgb=rgb.map(v=>v/chosen.length);
+ $("mix").style.background=hex(rgb);$("mix").textContent=hex(rgb);
+}
+function check(){
+ let need=level<4?2:3;
+ if(chosen.length!==need){$("message").textContent="⚠️ Escolha "+need+" cores primeiro.";return}
+ let rgb=[0,0,0];chosen.forEach(c=>c.rgb.forEach((v,i)=>rgb[i]+=v));rgb=rgb.map(v=>v/chosen.length);
+ let d=distance(rgb,target.rgb), pts=Math.max(0,100-Math.round(d/4));
+ if(pts>=70){score+=pts;level=Math.min(10,1+Math.floor(score/200));$("message").textContent="🎉 Muito bom! +"+pts+" pontos!";setTimeout(newRound,1000)}
+ else{lives--;$("message").textContent="😅 Quase! Você ganhou "+pts+" pontos.";if(lives<=0)$("message").textContent="💥 Fim de jogo! Clique em Nova Rodada.";else setTimeout(newRound,900)}
+ update();
+}
+function update(){$("score").textContent=score;$("level").textContent=level;$("lives").textContent=lives}
+newRound();
+</script>
+</body>
+</html>
